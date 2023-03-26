@@ -1,83 +1,102 @@
 function number2Words(number) {
   const spelled = {
-    units: [
-      "un",
-      "deux",
-      "trois",
-      "quatres",
-      "cinq",
-      "six",
-      "sept",
-      "huit",
-      "neuf",
-    ],
-    "10-20": [
-      "dix",
-      "onze",
-      "douze",
-      "treize",
-      "quatorze",
-      "quinze",
-      "seize",
-      "dix-sept",
-      "dix-huit",
-      "dix-neuf",
-    ],
-    tens: [
-      "dix",
-      "vingt",
-      "trente",
-      "quarante",
-      "cinquante",
-      "soixante",
-      "soixante-dix",
-      "quatre-vingt",
-      "quatre-vingt-dix",
-    ],
-    hundred: "cent",
-    thousand: "mille",
-    million: "million",
-    billion: "milliard",
-  };
+      zero: "zéro",
+      units: [
+        "un",
+        "deux",
+        "trois",
+        "quatre",
+        "cinq",
+        "six",
+        "sept",
+        "huit",
+        "neuf",
+      ],
+      tenTwenty: [
+        "dix",
+        "onze",
+        "douze",
+        "treize",
+        "quatorze",
+        "quinze",
+        "seize",
+        "dix-sept",
+        "dix-huit",
+        "dix-neuf",
+      ],
+      tens: [
+        "dix",
+        "vingt",
+        "trente",
+        "quarante",
+        "cinquante",
+        "soixante",
+        "soixante",
+        "quatre-vingt",
+        "quatre-vingt",
+      ],
+      hundred: "cent",
+      thousand: "mille",
+      million: "million",
+      billion: "milliard",
+    },
+    max = 1000000000000;
 
   if (typeof number !== "number") return;
-  number = parseInt(number);
+  number = Math.abs(parseInt(number));
 
-  if (!number) return "zéro";
-  if (number > 999999999999) return;
+  if (number >= max) return;
 
-  let units = number % 10,
-    tens = number % 100,
-    hundreds = number % 1000,
-    w,
-    lessThanHundred = (number) => {
-      if (units === number) return spelled.units[number - 1];
-      if (number < 20) return spelled["10-20"][number - 10];
-      if (number === tens) {
-        w = spelled.tens[(number - units) / 10 - 1];
-        if (!units) return w;
+  function lessThanThousand(num) {
+    if (!num) return spelled.zero;
+    if (num < 10) return spelled.units[num - 1];
+    if (num < 20) return spelled.tenTwenty[num - 10];
 
-        return w + `-${spelled.units[units - 1]}`;
-      }
-    };
+    if (num < 100) {
+      let units = num % 10,
+        ret = spelled.tens[Math.floor(num / 10) - 1];
+      if (num - units === 70 || num - units === 90)
+        ret += "-" + spelled.tenTwenty[units];
+      else ret += units ? "-" + spelled.units[units - 1] : "";
+      return ret;
+    }
+    if (num < 1000) {
+      let tens = num % 100;
+      let ret = tens ? "-" + lessThanThousand(tens) : "";
+      tens = Math.floor(num / 100);
 
-  w = lessThanHundred(number);
-  if (w) return w;
-
-  if (number === hundreds) {
-    w = spelled.units[(number - tens) / 100 - 1];
-    if (number - tens === 100) w = "";
-    else w += "-";
-    w += `${spelled.hundred}-${lessThanHundred(tens)}`;
-    return w;
+      return `${tens > 1 ? spelled.units[tens - 1] + "-" : ""}${
+        spelled.hundred
+      }${ret}`;
+    }
   }
 
-  let endPart = lessThanHundred(hundreds);
+  let w = lessThanThousand(number);
+  if (w) return w;
+
+  let i = 0,
+    ret = number % 1000 ? lessThanThousand(number % 1000) : "",
+    llions = [spelled.thousand, spelled.million, spelled.billion];
+
+  while (!w && i < llions.length) {
+    ret = ret.length ? "-" + ret : "";
+    number = Math.floor(number / 1000);
+    ret =
+      `${number % 1000 !== 0 ? lessThanThousand(number % 1000) + "-" : ""}${
+        number % 1000 !== 0 ? llions[i] : ""
+      }` + ret;
+    w = lessThanThousand(number);
+    i++;
+  }
+  if (i === 1 && ret.split("-")[0] === spelled.units[0])
+    ret = ret.slice(ret.split("-")[0].length + 1);
+
+  return ret.replace(/-{2,}/, "-");
 }
 
 document.getElementById("nbr").addEventListener("input", function (e) {
   let a = +e.target.value,
     elem = document.getElementById("test");
-  if (a) elem.innerHTML = a + " -> " + number2Words(a);
+  if (!isNaN(a)) elem.innerHTML = a + " -> " + number2Words(a);
   else elem.innerHTML = "Entrez un nombre valide!";
 });
